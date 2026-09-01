@@ -1,0 +1,28 @@
+// swift-tools-version: 5.7
+import PackageDescription
+
+let package = Package(
+    name: "ApexMetal",
+    platforms: [
+        .macOS(.v13)
+    ],
+    products: [
+        .library(name: "ApexMetal", type: .dynamic, targets: ["ApexMetal", "CInterface"])
+    ],
+    dependencies: [],
+    targets: [
+        .target(
+            name: "ApexMetal",
+            dependencies: [],
+            path: "Sources/ApexMetal",
+            resources: [
+                .process("../../Shaders")
+            ]
+        ),
+        .target(
+            name: "CInterface",
+            dependencies: ["ApexMetal"],
+            path: "Sources/CInterface"
+        )
+    ]
+)
