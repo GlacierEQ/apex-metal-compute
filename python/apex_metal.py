@@ -38,6 +38,24 @@ class ApexMetal:
         if hasattr(self, 'lib') and self.lib and hasattr(self, 'ctx') and self.ctx:
             self.lib.apex_metal_free(self.ctx)
             
+    @staticmethod
+    def attention_forward_cpu(Q: np.ndarray, K: np.ndarray, V: np.ndarray) -> np.ndarray:
+        """Reference scaled-dot-product attention. Unique to this tree so
+        Intel Macs without libApexMetal.dylib still prove the math, not a skip.
+        Q,K,V: (heads, seq, dim)
+        """
+        q = np.ascontiguousarray(Q, dtype=np.float32)
+        k = np.ascontiguousarray(K, dtype=np.float32)
+        v = np.ascontiguousarray(V, dtype=np.float32)
+        if q.shape != k.shape or q.shape != v.shape or q.ndim != 3:
+            raise ValueError("Q,K,V must share shape (heads, seq, dim)")
+        scale = np.float32(1.0 / np.sqrt(q.shape[-1]))
+        logits = np.matmul(q, np.transpose(k, (0, 2, 1))) * scale
+        logits = logits - np.max(logits, axis=-1, keepdims=True)
+        weights = np.exp(logits)
+        weights = weights / np.sum(weights, axis=-1, keepdims=True)
+        return np.matmul(weights, v).astype(np.float32)
+
     def attention_forward(self, Q: np.ndarray, K: np.ndarray, V: np.ndarray) -> np.ndarray:
         Q = np.ascontiguousarray(Q, dtype=np.float32)
         K = np.ascontiguousarray(K, dtype=np.float32)
